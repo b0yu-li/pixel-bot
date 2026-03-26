@@ -5,14 +5,40 @@ import { useMemo, useState } from "react";
 import { DefaultChatTransport } from "ai";
 import ReactMarkdown from "react-markdown";
 
+type RuntimeConfig = {
+  tone: string;
+  boundarySummary: string;
+};
+
+const HANDOFF_TRIGGER_PHRASE =
+  "I'll connect you with a human technician to finalize your repair quote.";
+
 export default function Page() {
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig>({
+    tone: "Friendly, nostalgic, tech-savvy, and concise.",
+    boundarySummary:
+      "Only support retro handheld firmware/setup/compatibility and store policies. Decline unrelated requests politely.",
+  });
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: {
+          runtimeConfig,
+        },
+      }),
+    [runtimeConfig],
+  );
+
   const {
     messages,
     sendMessage,
     status,
     error,
   } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport,
   });
 
   const [input, setInput] = useState("");
@@ -31,6 +57,52 @@ export default function Page() {
         Retro handheld support agent prototype. Ask about firmware, setup, and
         store policies.
       </p>
+
+      <section className="adminPanel" aria-label="Admin config panel">
+        <button
+          type="button"
+          className="adminToggle"
+          onClick={() => setAdminOpen((v) => !v)}
+          aria-expanded={adminOpen}
+          aria-controls="admin-config-content"
+        >
+          {adminOpen ? "Hide Admin Mode" : "Show Admin Mode"}
+        </button>
+
+        {adminOpen ? (
+          <div id="admin-config-content" className="adminContent">
+            <label className="adminField">
+              <span>Persona tone</span>
+              <textarea
+                value={runtimeConfig.tone}
+                onChange={(e) =>
+                  setRuntimeConfig((prev) => ({ ...prev, tone: e.target.value }))
+                }
+                rows={2}
+              />
+            </label>
+
+            <label className="adminField">
+              <span>Boundary policy summary</span>
+              <textarea
+                value={runtimeConfig.boundarySummary}
+                onChange={(e) =>
+                  setRuntimeConfig((prev) => ({
+                    ...prev,
+                    boundarySummary: e.target.value,
+                  }))
+                }
+                rows={3}
+              />
+            </label>
+
+            <label className="adminField">
+              <span>Handoff trigger phrase (locked)</span>
+              <textarea value={HANDOFF_TRIGGER_PHRASE} rows={2} disabled />
+            </label>
+          </div>
+        ) : null}
+      </section>
 
       <section className="chat" aria-label="Chat transcript">
         {messages.length === 0 ? (

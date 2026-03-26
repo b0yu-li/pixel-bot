@@ -77,6 +77,11 @@ export type LeadQualificationState = {
   formFactorFound: boolean;
 };
 
+export type ScopeState = {
+  isOutOfScope: boolean;
+  reason: string;
+};
+
 function extractBudget(text: string): boolean {
   // Rough budget detection: look for 2-6 digit numbers, optionally with currency symbol.
   const t = text.toLowerCase();
@@ -136,5 +141,54 @@ export function evaluateLeadQualification(
     budgetFound,
     formFactorFound,
   };
+}
+
+export function evaluateScope(text: string): ScopeState {
+  const t = text.toLowerCase();
+
+  const inScopeSignals = [
+    "retro",
+    "handheld",
+    "anbernic",
+    "firmware",
+    "garlicos",
+    "emulator",
+    "rom",
+    "ps1",
+    "snes",
+    "gba",
+    "shipping",
+    "return",
+    "refund",
+    "warranty",
+    "order",
+    "store policy",
+  ];
+
+  const outOfScopeSignals = [
+    "iphone",
+    "macbook",
+    "resume",
+    "homework",
+    "stock price",
+    "bitcoin",
+    "weather",
+    "flight",
+    "restaurant",
+    "medical",
+    "legal advice",
+  ];
+
+  const hasInScope = inScopeSignals.some((k) => t.includes(k));
+  const hasOutScope = outOfScopeSignals.some((k) => t.includes(k));
+
+  if (hasOutScope && !hasInScope) {
+    return {
+      isOutOfScope: true,
+      reason: "Outside retro-handheld and store-policy support scope.",
+    };
+  }
+
+  return { isOutOfScope: false, reason: "Looks in scope or neutral." };
 }
 

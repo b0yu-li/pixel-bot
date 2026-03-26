@@ -18,6 +18,7 @@ npm install
 Create a file named `.env.local` and set:
 ```bash
 OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=qwen/qwen3.5-plus-02-15
 ```
 
 ### 3) Run
@@ -33,6 +34,7 @@ Open:
 ### Chat
 - Frontend: `app/page.tsx` uses the Vercel AI SDK `useChat` hook.
 - Backend: `app/api/chat/route.ts` uses `streamText` and returns `toUIMessageStreamResponse()` for streaming UX.
+- Admin mode: `app/page.tsx` exposes a session-level config panel for tone and boundary summary.
 
 ### Knowledge base + retrieval
 - The KB lives in `src/lib/knowledge-base.ts` (12 Q&As).
@@ -40,10 +42,38 @@ Open:
 
 ### Behavior logic
 - `src/lib/handoff.ts` detects recommendation intent (budget + form factor) and broken-device handoff readiness (ZIP + issue signals).
-- The API route builds a system prompt that combines persona boundaries + retrieved snippets + the handoff/lead-qualification rules.
+- `src/lib/handoff.ts` also classifies out-of-scope requests.
+- The API route enforces deterministic guardrails first (scope handling, recommendation clarifiers, exact handoff phrase), then uses LLM generation for normal in-scope questions.
+
+## Product decisions
+- **Configurable support persona**: session-level admin controls make the prototype feel like an agent platform.
+- **Deterministic critical paths**: scope boundaries and escalation/handoff are code-enforced for reliability.
+- **Retrieval-first responses**: weighted retrieval favors title/tags/question relevance over long-answer noise.
+
+## What admin/config mode demonstrates
+- A business owner can tune assistant tone and boundaries without code edits.
+- The handoff trigger phrase remains locked for compliance and consistent escalation.
+- Config is session-level in this prototype, showing a path to persisted settings.
+
+## Manual test matrix
+1. **Recommendation clarification**
+   - Input: “Recommend me a handheld for GBA under $100.”
+   - Expected: asks for any missing budget/form-factor details before recommendation.
+2. **Broken-device escalation**
+   - Input: “My handheld screen is cracked” + ZIP + issue details.
+   - Expected: outputs exactly: `I'll connect you with a human technician to finalize your repair quote.`
+3. **Out-of-scope boundary**
+   - Input: weather/crypto/medical/legal unrelated questions.
+   - Expected: polite refusal with redirection to retro-handheld/store-policy scope.
+4. **KB-grounded policy**
+   - Input: “What is your return window?”
+   - Expected: answer aligns with the KB return policy.
+5. **Admin mode impact**
+   - Change tone text in Admin mode and ask a new question.
+   - Expected: response style reflects updated tone instructions.
 
 ## Next improvements (if more time)
 - Replace the toy retrieval scoring with embeddings (still local) for better grounding.
-- Add a small “admin/config view” to edit the KB and persona instructions.
+- Persist admin/config settings and add role-based access.
 - Add analytics: store chat transcripts to an in-memory log with simple metrics.
 

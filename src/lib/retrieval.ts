@@ -41,14 +41,16 @@ function tokenize(text: string): string[] {
 }
 
 function scoreEntry(entry: KnowledgeBaseEntry, queryTokens: string[]): number {
-  const haystackTokens = tokenize(
-    `${entry.title} ${entry.tags.join(" ")} ${entry.question} ${entry.answer}`,
-  );
-  const haystackSet = new Set(haystackTokens);
-
+  const titleSet = new Set(tokenize(entry.title));
+  const tagSet = new Set(tokenize(entry.tags.join(" ")));
+  const questionSet = new Set(tokenize(entry.question));
+  const answerSet = new Set(tokenize(entry.answer));
   let score = 0;
   for (const qt of queryTokens) {
-    if (haystackSet.has(qt)) score += 1;
+    if (titleSet.has(qt)) score += 3;
+    if (tagSet.has(qt)) score += 3;
+    if (questionSet.has(qt)) score += 2;
+    if (answerSet.has(qt)) score += 1;
   }
 
   // Boost exact tag/phrase-ish matches.
@@ -70,9 +72,14 @@ export function getRelevantSnippets(query: string, limit = 4): KnowledgeBaseEntr
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  // If everything scores to ~0, still provide some fallback context.
+  // Require minimum confidence before returning top-k snippets.
+  const minScore = 2;
+  const filtered = scored.filter((s) => s.score >= minScore);
+  if (filtered.length > 0) return filtered.map((s) => s.entry);
+
+  // If confidence is low, return empty snippets and let caller respond gracefully.
   const anyGood = scored.some((s) => s.score > 0);
-  if (anyGood) return scored.map((s) => s.entry);
+  if (anyGood) return scored.slice(0, 1).map((s) => s.entry);
   return KNOWLEDGE_BASE.slice(0, limit);
 }
 

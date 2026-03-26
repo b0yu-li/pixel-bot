@@ -46,6 +46,49 @@ h1 {
   line-height: 1.4;
 }
 
+.adminPanel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: rgba(18, 26, 42, 0.35);
+}
+
+.adminToggle {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 8px 12px;
+}
+
+.adminContent {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.adminField {
+  display: grid;
+  gap: 6px;
+}
+
+.adminField span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.adminField textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(18, 26, 42, 0.55);
+  color: var(--text);
+  padding: 10px 12px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
 .chat {
   border: 1px solid var(--border);
   border-radius: 14px;
