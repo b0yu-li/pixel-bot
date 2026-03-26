@@ -112,7 +112,7 @@ h1 {
   width: 86px;
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   padding-top: 2px;
 }
 
@@ -120,6 +120,7 @@ h1 {
   white-space: normal;
   word-break: break-word;
   line-height: 1.45;
+  font-size: 16px;
 }
 
 .content p {
@@ -161,12 +162,15 @@ input[type="text"] {
   border: 1px solid var(--border);
   background: rgba(18, 26, 42, 0.55);
   color: var(--text);
+  font-size: 16px;
+  line-height: 1.35;
   padding: 12px 14px;
   outline: none;
 }
 
 input[type="text"]::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 16px;
 }
 
 button {
