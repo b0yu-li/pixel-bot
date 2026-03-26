@@ -1,0 +1,1 @@
+I am new to retro handheld, I mainly want to play GBA and SFC, any recommendations?
