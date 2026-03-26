@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { useMemo, useState } from "react";
 import { DefaultChatTransport } from "ai";
+import ReactMarkdown from "react-markdown";
 
 export default function Page() {
   const {
@@ -44,10 +45,12 @@ export default function Page() {
                 {m.role === "assistant" ? "PixelBot" : "You"}
               </div>
               <div className="content">
-                {m.parts
-                  .filter((p) => p.type === "text")
-                  .map((p) => p.text)
-                  .join("")}
+                <ReactMarkdown skipHtml={true}>
+                  {m.parts
+                    .filter((p) => p.type === "text")
+                    .map((p) => p.text)
+                    .join("")}
+                </ReactMarkdown>
               </div>
             </div>
           ))
