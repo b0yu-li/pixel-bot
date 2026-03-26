@@ -19,6 +19,12 @@ Create a file named `.env.local` and set:
 ```bash
 OPENROUTER_API_KEY=your_openrouter_api_key
 OPENROUTER_MODEL=qwen/qwen3.5-plus-02-15
+
+# Arize Phoenix local telemetry
+PHOENIX_COLLECTOR_ENDPOINT=http://127.0.0.1:6006/v1/traces
+PHOENIX_PROJECT_NAME=pixel-bot-local
+# Optional (used for Phoenix Cloud). Keep empty for local.
+PHOENIX_API_KEY=
 ```
 
 ### 3) Run
@@ -29,12 +35,24 @@ npm run dev
 Open:
 - http://localhost:3000
 
+### 4) (Optional) Run local Arize Phoenix telemetry
+Start Phoenix locally in a separate terminal:
+
+```bash
+pip install -U arize-phoenix
+phoenix serve
+```
+
+Then open:
+- http://127.0.0.1:6006
+
 ## How it works
 
 ### Chat
 - Frontend: `app/page.tsx` uses the Vercel AI SDK `useChat` hook.
 - Backend: `app/api/chat/route.ts` uses `streamText` and returns `toUIMessageStreamResponse()` for streaming UX.
 - Admin mode: `app/page.tsx` exposes a session-level config panel for tone and boundary summary.
+- LLM telemetry: `streamText` runs with `experimental_telemetry` enabled so local Phoenix can receive model-call traces.
 
 ### Knowledge base + retrieval
 - The KB lives in `src/lib/knowledge-base.ts` (12 Q&As).
@@ -71,6 +89,12 @@ Open:
 5. **Admin mode impact**
    - Change tone text in Admin mode and ask a new question.
    - Expected: response style reflects updated tone instructions.
+
+## Phoenix telemetry validation (LLM calls only)
+1. Start Phoenix (`phoenix serve`) and confirm UI is reachable at `http://127.0.0.1:6006`.
+2. Start the app (`npm run dev`) and send at least one in-scope chat message that reaches the model.
+3. In Phoenix UI, confirm a new trace appears under project `pixel-bot-local` (or your `PHOENIX_PROJECT_NAME`).
+4. Note: this iteration traces **LLM calls only**; deterministic early-return guardrails may not create model traces.
 
 ## Next improvements (if more time)
 - Replace the toy retrieval scoring with embeddings (still local) for better grounding.

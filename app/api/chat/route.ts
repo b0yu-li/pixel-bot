@@ -136,6 +136,14 @@ export async function POST(req: Request) {
     temperature: 0,
     system: systemPrompt,
     messages: await convertToModelMessages(messages as any),
+    experimental_telemetry: {
+      isEnabled: true,
+      functionId: "pixelbot-api-chat",
+      metadata: {
+        route: "/api/chat",
+        model: modelName,
+      },
+    },
   });
 
   return result.toUIMessageStreamResponse();
