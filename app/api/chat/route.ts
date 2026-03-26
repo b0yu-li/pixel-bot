@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     "- If you are unsure, say what you need from the user and offer a handoff for repair quotes when appropriate.",
   ].join("\n");
 
-  const model = openrouter("openai/gpt-4o-mini");
+  const model = openrouter("qwen/qwen3.5-plus-02-15");
 
   const result = streamText({
     model,
