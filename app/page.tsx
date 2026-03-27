@@ -124,6 +124,14 @@ export default function Page() {
     return null;
   }, [messages]);
 
+  const messageText = (message: (typeof messages)[number]) =>
+    message.parts
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+
+  const showStandaloneLoading = isLoading && !latestAssistantMessageId;
+
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, status]);
@@ -277,12 +285,18 @@ export default function Page() {
           </>
         ) : (
           messages.map((m) => (
+            (() => {
+              const text = messageText(m);
+              const isStreamingAssistant =
+                isLoading &&
+                m.role === "assistant" &&
+                m.id === latestAssistantMessageId;
+
+              return (
             <div
               key={m.id}
               className={`msg msgEnter ${m.role} ${
-                isLoading &&
-                m.role === "assistant" &&
-                m.id === latestAssistantMessageId
+                isStreamingAssistant
                   ? "streaming"
                   : ""
               }`}
@@ -291,18 +305,23 @@ export default function Page() {
                 {m.role === "assistant" ? "PixelBot" : "You"}
               </div>
               <div className="content">
-                <ReactMarkdown skipHtml={true}>
-                  {m.parts
-                    .filter((p) => p.type === "text")
-                    .map((p) => p.text)
-                    .join("")}
-                </ReactMarkdown>
+                {isStreamingAssistant && !text.trim() ? (
+                  <div className="typingIndicator" aria-label="PixelBot is thinking">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                ) : (
+                  <ReactMarkdown skipHtml={true}>{text}</ReactMarkdown>
+                )}
               </div>
             </div>
+              );
+            })()
           ))
         )}
 
-        {isLoading ? (
+        {showStandaloneLoading ? (
           <div className="msg assistant loadingMsg msgEnter">
             <div className="roleBadge">PixelBot</div>
             <div className="content">
