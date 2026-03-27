@@ -25,7 +25,7 @@ body {
 .container {
   max-width: 900px;
   margin: 0 auto;
-  padding: 28px 18px;
+  padding: 28px 18px 120px 18px;
 }
 
 .titleRow {
@@ -136,10 +136,11 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(18, 26, 42, 0.55);
-  padding: 14px;
+  padding: 14px 14px 18px;
   min-height: 360px;
   max-height: 58vh;
   overflow-y: auto;
+  user-select: none;
 }
 
 .emptyState {
@@ -173,6 +174,11 @@ h1 {
   gap: 10px;
   padding: 8px 6px;
   border-radius: 10px;
+  align-items: flex-start;
+}
+
+.msg.assistant {
+  align-items: center;
 }
 
 .msgEnter {
@@ -188,14 +194,15 @@ h1 {
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 13px;
-  padding-top: 2px;
+  padding-top: 0;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .roleName {
-  line-height: 1;
+  line-height: 1.2;
+  padding-top: 0;
 }
 
 .avatar {
@@ -229,6 +236,11 @@ h1 {
   word-break: break-word;
   line-height: 1.45;
   font-size: 16px;
+  user-select: text;
+}
+
+.content * {
+  user-select: text;
 }
 
 .msg.streamingText .content {
@@ -271,6 +283,19 @@ h1 {
 
 .assistant .roleBadge {
   color: rgba(110, 168, 254, 0.9);
+  align-items: center;
+}
+
+.assistant .roleName {
+  padding-top: 0;
+}
+
+.user .content {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.assistant .content {
+  color: rgba(205, 224, 255, 0.96);
 }
 
 .loadingMsg .content {
@@ -299,14 +324,21 @@ h1 {
   animation-delay: 0.32s;
 }
 
+.composerDock {
+  position: fixed;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(900px, calc(100vw - 36px));
+  z-index: 30;
+  padding-top: 14px;
+  background: linear-gradient(180deg, rgba(11, 15, 23, 0) 0%, rgba(11, 15, 23, 0.92) 35%);
+}
+
 .composer {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
-  position: sticky;
-  bottom: 0;
-  padding-top: 10px;
-  background: linear-gradient(180deg, rgba(11, 15, 23, 0) 0%, rgba(11, 15, 23, 0.95) 35%);
+  margin: 0;
 }
 
 input[type="text"] {
@@ -440,7 +472,7 @@ button:disabled {
 
 @media (max-width: 700px) {
   .container {
-    padding: 16px 12px;
+    padding: 16px 12px 112px 12px;
   }
 
   .titleRow {
@@ -450,13 +482,13 @@ button:disabled {
   }
 
   .msg {
-    flex-direction: column;
-    gap: 6px;
-    padding: 10px 6px;
+    gap: 8px;
+    padding: 9px 6px;
   }
 
   .roleBadge {
-    width: auto;
+    width: 74px;
+    flex: 0 0 74px;
     font-size: 12px;
     gap: 6px;
   }
@@ -479,6 +511,12 @@ button:disabled {
 
   .composer {
     gap: 8px;
+  }
+
+  .composerDock {
+    width: calc(100vw - 24px);
+    bottom: max(8px, env(safe-area-inset-bottom));
+    padding-top: 10px;
   }
 
   button,

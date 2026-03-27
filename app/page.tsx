@@ -128,7 +128,8 @@ export default function Page() {
     message.parts
       .filter((p) => p.type === "text")
       .map((p) => p.text)
-      .join("");
+      .join("")
+      .trimEnd();
 
   const showStandaloneLoading = isLoading && !latestAssistantMessageId;
 
@@ -357,33 +358,35 @@ export default function Page() {
         <div ref={transcriptEndRef} />
       </section>
 
-      <form
-        className="composer"
-        onSubmit={(e) => {
-          e.preventDefault();
-          submitText(input);
-        }}
-      >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about retro handhelds..."
-          disabled={isLoading}
-          name="input"
-          aria-label="Chat input"
-        />
-        <button type="submit" disabled={isLoading || !input.trim()}>
-          {isLoading ? (
-            <span className="buttonLoading">
-              <span className="spinner" />
-              Sending...
-            </span>
-          ) : (
-            "Send"
-          )}
-        </button>
-      </form>
+      <div className="composerDock">
+        <form
+          className="composer"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitText(input);
+          }}
+        >
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about retro handhelds..."
+            disabled={isLoading}
+            name="input"
+            aria-label="Chat input"
+          />
+          <button type="submit" disabled={isLoading || !input.trim()}>
+            {isLoading ? (
+              <span className="buttonLoading">
+                <span className="spinner" />
+                Sending...
+              </span>
+            ) : (
+              "Send"
+            )}
+          </button>
+        </form>
+      </div>
 
       {error ? (
         <p className="error">
