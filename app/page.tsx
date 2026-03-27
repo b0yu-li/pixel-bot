@@ -117,6 +117,13 @@ export default function Page() {
     return "Streaming";
   }, [status]);
 
+  const latestAssistantMessageId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i]?.role === "assistant") return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, status]);
@@ -270,7 +277,16 @@ export default function Page() {
           </>
         ) : (
           messages.map((m) => (
-            <div key={m.id} className={`msg msgEnter ${m.role}`}>
+            <div
+              key={m.id}
+              className={`msg msgEnter ${m.role} ${
+                isLoading &&
+                m.role === "assistant" &&
+                m.id === latestAssistantMessageId
+                  ? "streaming"
+                  : ""
+              }`}
+            >
               <div className="roleBadge">
                 {m.role === "assistant" ? "PixelBot" : "You"}
               </div>
