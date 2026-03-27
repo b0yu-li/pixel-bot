@@ -293,14 +293,14 @@ export default function Page() {
                 m.id === latestAssistantMessageId;
 
               return (
-            <div
-              key={m.id}
-              className={`msg msgEnter ${m.role} ${
-                isStreamingAssistant
-                  ? "streaming"
-                  : ""
-              }`}
-            >
+             <div
+               key={m.id}
+               className={`msg msgEnter ${m.role} ${
+                isStreamingAssistant && text.trim()
+                   ? "streamingText"
+                   : ""
+               }`}
+             >
               <div className="roleBadge">
                 {m.role === "assistant" ? "PixelBot" : "You"}
               </div>
