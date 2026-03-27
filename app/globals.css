@@ -58,11 +58,35 @@ h1 {
   padding: 5px 10px;
   font-size: 12px;
   color: var(--muted);
+  transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease,
+    box-shadow 220ms ease, transform 220ms ease;
 }
 
-.statusPill.error {
-  color: rgba(255, 140, 140, 0.95);
-  border-color: rgba(255, 120, 120, 0.5);
+.statusReady {
+  color: rgba(150, 245, 190, 0.98);
+  border-color: rgba(99, 220, 145, 0.45);
+  background: rgba(65, 190, 120, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(65, 190, 120, 0.12);
+}
+
+.statusStreaming {
+  color: rgba(255, 223, 150, 0.98);
+  border-color: rgba(255, 176, 70, 0.58);
+  background: rgba(255, 157, 0, 0.16);
+  box-shadow: 0 0 0 0 rgba(255, 170, 55, 0.34);
+  animation: streaming-pulse 1.35s ease-in-out infinite;
+}
+
+.statusError {
+  color: rgba(255, 170, 170, 0.98);
+  border-color: rgba(255, 105, 105, 0.62);
+  background: rgba(255, 80, 80, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusStreaming {
+    animation: none;
+  }
 }
 
 .adminPanel {
@@ -165,6 +189,39 @@ h1 {
   color: var(--muted);
   font-size: 13px;
   padding-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roleName {
+  line-height: 1;
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.avatar.assistant {
+  background: rgba(110, 168, 254, 0.18);
+  border-color: rgba(110, 168, 254, 0.45);
+  color: rgba(195, 220, 255, 0.98);
+}
+
+.avatar.user {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .content {
@@ -366,6 +423,21 @@ button:disabled {
   }
 }
 
+@keyframes streaming-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 170, 55, 0.32);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 170, 55, 0);
+    transform: translateY(-0.5px);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 170, 55, 0);
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 700px) {
   .container {
     padding: 16px 12px;
@@ -386,6 +458,13 @@ button:disabled {
   .roleBadge {
     width: auto;
     font-size: 12px;
+    gap: 6px;
+  }
+
+  .avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 9px;
   }
 
   .content {

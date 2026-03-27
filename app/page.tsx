@@ -153,7 +153,15 @@ export default function Page() {
       <div className="titleRow">
         <h1>PixelBot</h1>
         <div className="headerActions">
-          <span className={`statusPill ${status === "error" ? "error" : ""}`}>
+          <span
+            className={`statusPill ${
+              status === "error"
+                ? "statusError"
+                : status === "ready"
+                  ? "statusReady"
+                  : "statusStreaming"
+            }`}
+          >
             {statusLabel}
           </span>
           <button type="button" onClick={resetConversation} className="ghostButton">
@@ -302,7 +310,15 @@ export default function Page() {
                }`}
              >
               <div className="roleBadge">
-                {m.role === "assistant" ? "PixelBot" : "You"}
+                <span
+                  className={`avatar ${m.role === "assistant" ? "assistant" : "user"}`}
+                  aria-hidden="true"
+                >
+                  {m.role === "assistant" ? "PB" : "U"}
+                </span>
+                <span className="roleName">
+                  {m.role === "assistant" ? "PixelBot" : "You"}
+                </span>
               </div>
               <div className="content">
                 {isStreamingAssistant && !text.trim() ? (
@@ -323,7 +339,12 @@ export default function Page() {
 
         {showStandaloneLoading ? (
           <div className="msg assistant loadingMsg msgEnter">
-            <div className="roleBadge">PixelBot</div>
+            <div className="roleBadge">
+              <span className="avatar assistant" aria-hidden="true">
+                PB
+              </span>
+              <span className="roleName">PixelBot</span>
+            </div>
             <div className="content">
               <div className="typingIndicator" aria-label="PixelBot is thinking">
                 <span />
