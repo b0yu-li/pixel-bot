@@ -216,7 +216,7 @@ export default function Page() {
         <div className="panelLabel">Admin Config</div>
         <button
           type="button"
-          className="adminToggle"
+          className="adminToggle secondaryButton"
           onClick={() => setAdminOpen((v) => !v)}
           aria-expanded={adminOpen}
           aria-controls="admin-config-content"
@@ -417,7 +417,11 @@ export default function Page() {
             name="input"
             aria-label="Chat input"
           />
-          <button type="submit" disabled={isLoading || !input.trim()}>
+          <button
+            type="submit"
+            className="primaryButton"
+            disabled={isLoading || !input.trim()}
+          >
             {isLoading ? (
               <span className="buttonLoading">
                 <span className="spinner" />
