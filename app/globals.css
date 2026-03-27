@@ -194,6 +194,42 @@ body::before {
   gap: 7px;
 }
 
+.brandLockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+}
+
+.brandLogo {
+  width: 76px;
+  height: auto;
+  filter:
+    drop-shadow(0 0 5px rgba(86, 232, 255, 0.45))
+    drop-shadow(0 0 14px rgba(255, 79, 198, 0.22));
+}
+
+.logoShell {
+  stroke: #7a73cb;
+  stroke-width: 2;
+}
+
+.logoNeon {
+  fill: #56e8ff;
+}
+
+.logoAccentA {
+  fill: #ff4fc6;
+}
+
+.logoAccentB {
+  fill: #56e8ff;
+}
+
+.logoStartSelect {
+  fill: #a9a3df;
+}
+
 .hudLabel {
   display: inline-block;
   width: fit-content;
@@ -779,9 +815,23 @@ button:disabled {
 }
 
 .pixelTitle {
+  display: inline-flex;
+  padding-top: 10px;
+  align-items: center;
+  gap: 8px;
+  line-height: 1;
   font-family: var(--font-ui);
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f8f8ff;
   text-shadow: 2px 2px 0 rgba(12, 9, 34, 0.95);
+}
+
+.pixelTitle span:last-child {
+  color: #56e8ff;
+  text-shadow:
+    0 0 6px rgba(86, 232, 255, 0.45),
+    2px 2px 0 rgba(12, 9, 34, 0.95);
 }
 
 .pixelTagline {
@@ -936,6 +986,14 @@ button:disabled {
   .msg {
     gap: 8px;
     padding: 9px 6px;
+  }
+
+  .brandLockup {
+    gap: 9px;
+  }
+
+  .brandLogo {
+    width: 62px;
   }
 
   .roleBadge {

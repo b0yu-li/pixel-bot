@@ -188,7 +188,34 @@ export default function Page() {
               <span className="hudLight" />
             </span>
           </span>
-          <h1 className="pixelTitle">PixelBot</h1>
+          <div className="brandLockup" aria-label="Pixel Bot brand">
+            <h1 className="pixelTitle">
+              <span>Pixel</span>
+              <span>Bot</span>
+            </h1>
+            <svg
+              className="brandLogo"
+              viewBox="0 0 96 56"
+              role="img"
+              aria-label="Retro controller logo"
+            >
+              <defs>
+                <linearGradient id="pb-shell" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#343083" />
+                  <stop offset="100%" stopColor="#1d1a4f" />
+                </linearGradient>
+              </defs>
+              <rect x="3" y="20" width="90" height="28" rx="8" fill="url(#pb-shell)" />
+              <rect x="11" y="11" width="74" height="18" rx="7" fill="url(#pb-shell)" />
+              <rect x="0" y="18" width="96" height="32" rx="9" fill="none" className="logoShell" />
+              <rect x="19" y="25" width="18" height="6" className="logoNeon" />
+              <rect x="25" y="19" width="6" height="18" className="logoNeon" />
+              <circle cx="66" cy="28" r="6" className="logoAccentA" />
+              <circle cx="79" cy="36" r="6" className="logoAccentB" />
+              <rect x="44" y="33" width="8" height="3" className="logoStartSelect" />
+              <rect x="54" y="33" width="8" height="3" className="logoStartSelect" />
+            </svg>
+          </div>
         </div>
         <div className="headerActions">
           <span
