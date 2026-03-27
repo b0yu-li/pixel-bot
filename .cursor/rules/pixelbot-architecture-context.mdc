@@ -1,0 +1,25 @@
+---
+description: PixelBot architecture context for faster code navigation
+globs: **/*.{ts,tsx,js,jsx,css,md}
+alwaysApply: false
+---
+
+# PixelBot Architecture Context
+
+Use this map first before scanning the repo again.
+
+- App type: Next.js App Router support chatbot for retro handheld store workflows.
+- Main user flow UI: `app/page.tsx` (chat, starter prompts, admin session config).
+- Chat endpoint: `app/api/chat/route.ts` (streaming response + deterministic guardrails).
+- Shared styling: `app/globals.css`.
+- Retrieval/logic core:
+  - `src/lib/knowledge-base.ts` (Q&A corpus)
+  - `src/lib/retrieval.ts` (keyword/token overlap ranking)
+  - `src/lib/handoff.ts` (recommendation clarifiers, out-of-scope checks, repair escalation phrase)
+- Telemetry bootstrap: `instrumentation.ts` with Phoenix/OpenInference tracing.
+- Runtime defaults and setup details: `README.md`.
+
+When answering code questions:
+1) Start from this map and open only the most likely files.
+2) Prefer targeted symbol/path reads over broad repo-wide searches.
+3) Treat guardrail behavior in API + handoff modules as source of truth.

@@ -1,0 +1,28 @@
+---
+description: CSA assignment priorities and scoring rubric
+alwaysApply: true
+---
+
+# CSA Assignment Priorities
+
+Use this as the default objective for planning and coding in this repo.
+
+## Success Criteria
+- Optimize for rubric weights: Technical execution (30%), Product thinking (30%), Communication (20%), Creativity (20%).
+- Maintain required minimum scope: business context, chat UI, knowledge base grounding, clear agent persona/instructions, and graceful boundaries/handoff behavior.
+- Keep decisions pragmatic for a 2-4 hour prototype window; prioritize high-impact polish over low-value complexity.
+
+## Implementation Priorities
+1) Reliability first: deterministic handling for critical support flows and safe out-of-scope behavior.
+2) Product realism: make multi-turn support interactions feel useful and coherent.
+3) Demo readiness: preserve a smooth walkthrough path showing user flow, owner/admin flow, and clear guardrail behavior.
+
+## Deliverable Priorities
+- Keep `README.md` interview-ready: local run steps, stack/architecture decisions, what was built, next 3 features, and trade-offs.
+- Ensure code structure is easy to explain in a 3-5 minute technical walkthrough.
+- Favor changes that improve both product quality and communication clarity.
+
+## Working Style
+- Before large changes, evaluate expected impact on rubric dimensions.
+- Prefer focused, verifiable improvements that are easy to demo.
+- Avoid scope creep that risks completion quality.
