@@ -152,7 +152,10 @@ export default function Page() {
   return (
     <main className="container">
       <div className="titleRow">
-        <h1>PixelBot</h1>
+        <div className="titleBlock">
+          <span className="hudLabel">PXL-OS CONSOLE v1.0</span>
+          <h1 className="pixelTitle">PixelBot</h1>
+        </div>
         <div className="headerActions">
           <span
             className={`statusPill ${
@@ -170,12 +173,13 @@ export default function Page() {
           </button>
         </div>
       </div>
-      <p className="tagline">
+      <p className="tagline pixelTagline">
         Retro handheld support agent prototype. Ask about firmware, setup, and
         store policies.
       </p>
 
       <section className="adminPanel" aria-label="Admin config panel">
+        <div className="panelLabel">Admin Config</div>
         <button
           type="button"
           className="adminToggle"
@@ -267,6 +271,7 @@ export default function Page() {
       </section>
 
       <section className="chat" aria-label="Chat transcript">
+        <div className="panelLabel chatLabel">Live Transcript</div>
         {messages.length === 0 ? (
           <>
             <div className="emptyState">
@@ -360,12 +365,15 @@ export default function Page() {
 
       <div className="composerDock">
         <form
-          className="composer"
+          className="composer consoleInputBar"
           onSubmit={(e) => {
             e.preventDefault();
             submitText(input);
           }}
         >
+          <span className="inputPrompt" aria-hidden="true">
+            &gt;
+          </span>
           <input
             type="text"
             value={input}
