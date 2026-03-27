@@ -153,7 +153,14 @@ export default function Page() {
     <main className="container">
       <div className="titleRow">
         <div className="titleBlock">
-          <span className="hudLabel">PXL-OS CONSOLE v1.0</span>
+          <span className="hudLabel">
+            PXL-OS CONSOLE v1.0
+            <span className="hudLights" aria-hidden="true">
+              <span className="hudLight" />
+              <span className="hudLight" />
+              <span className="hudLight" />
+            </span>
+          </span>
           <h1 className="pixelTitle">PixelBot</h1>
         </div>
         <div className="headerActions">
