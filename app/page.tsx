@@ -76,6 +76,7 @@ const STARTER_PROMPTS = [
 ] as const;
 
 export default function Page() {
+  const [isBooting, setIsBooting] = useState(true);
   const [adminOpen, setAdminOpen] = useState(false);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig>({
     tone: DEFAULT_TONE,
@@ -137,6 +138,15 @@ export default function Page() {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, status]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setIsBooting(false);
+    }, 1400);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   const submitText = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
@@ -151,6 +161,23 @@ export default function Page() {
 
   return (
     <main className="container">
+      {isBooting ? (
+        <section
+          className="bootOverlay"
+          role="status"
+          aria-live="polite"
+          aria-label="PixelBot is booting"
+        >
+          <div className="bootPanel">
+            <p className="bootTitle">INITIALIZING PIXELBOT...</p>
+            <p className="bootSubline">Loading retro support modules</p>
+            <div className="bootProgress" aria-hidden="true">
+              <span />
+            </div>
+            <p className="bootHint">Press Start to continue</p>
+          </div>
+        </section>
+      ) : null}
       <div className="titleRow">
         <div className="titleBlock">
           <span className="hudLabel">

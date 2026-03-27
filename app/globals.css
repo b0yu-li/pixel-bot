@@ -94,6 +94,72 @@ body::before {
   right: -18px;
 }
 
+.bootOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(180deg, rgba(12, 9, 34, 0.96) 0%, rgba(7, 6, 22, 0.98) 100%);
+}
+
+.bootPanel {
+  width: min(580px, calc(100vw - 40px));
+  border: 2px solid var(--accent);
+  background: rgba(22, 17, 58, 0.96);
+  box-shadow: var(--pixel-shadow);
+  padding: 22px 20px;
+}
+
+.bootTitle {
+  margin: 0;
+  color: #d8f5ff;
+  font-family: "Press Start 2P", "Courier New", monospace;
+  font-size: clamp(12px, 2.3vw, 16px);
+  line-height: 1.45;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 rgba(10, 8, 26, 0.95);
+}
+
+.bootSubline {
+  margin: 12px 0 14px;
+  color: #bcb7da;
+  font-size: 14px;
+}
+
+.bootProgress {
+  height: 16px;
+  border: 2px solid var(--border);
+  background: rgba(24, 19, 66, 0.9);
+  padding: 2px;
+}
+
+.bootProgress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(69, 213, 255, 0.95) 0,
+      rgba(69, 213, 255, 0.95) 10px,
+      rgba(39, 32, 99, 0.85) 10px,
+      rgba(39, 32, 99, 0.85) 14px
+    );
+  animation: boot-load 1.25s steps(10) forwards;
+}
+
+.bootHint {
+  margin: 12px 0 0;
+  font-family: "Press Start 2P", "Courier New", monospace;
+  font-size: 10px;
+  color: #ffd966;
+  text-transform: uppercase;
+  animation: boot-hint-blink 900ms steps(2) infinite;
+}
+
 .titleRow {
   display: flex;
   align-items: baseline;
@@ -745,6 +811,26 @@ button:disabled {
   }
 }
 
+@keyframes boot-load {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes boot-hint-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.45;
+  }
+}
+
 @media (max-width: 700px) {
   .container {
     padding: 16px 12px 112px 12px;
@@ -815,6 +901,17 @@ button:disabled {
   .chip {
     padding: 10px 12px;
     font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusStreaming,
+  .hudLight:nth-child(3),
+  .msg.assistant .content,
+  .inputPrompt,
+  .bootProgress span,
+  .bootHint {
+    animation: none;
   }
 }
 
