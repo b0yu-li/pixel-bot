@@ -67,6 +67,7 @@ Then open:
 - **Configurable support persona**: session-level admin controls make the prototype feel like an agent platform.
 - **Deterministic critical paths**: scope boundaries and escalation/handoff are code-enforced for reliability.
 - **Retrieval-first responses**: weighted retrieval favors title/tags/question relevance over long-answer noise.
+- **Guided first-turn UX**: starter prompt chips and capability framing reduce blank-screen friction and drive realistic support flows.
 
 ## What admin/config mode demonstrates
 - A business owner can tune assistant tone and boundaries without code edits.
@@ -116,8 +117,27 @@ Then open:
   - `span_kind == 'LLM'`
 - Note: instrumentation exports a focused subset of spans (`pixelbot.chat*`, `ai.streamText*`, or spans with `openinference.span.kind`) to reduce noisy framework rows like `POST /api/chat`.
 
-## Next improvements (if more time)
-- Replace the toy retrieval scoring with embeddings (still local) for better grounding.
-- Persist admin/config settings and add role-based access.
-- Add analytics: store chat transcripts to an in-memory log with simple metrics.
+## Product walkthrough script (demo-ready)
+1. **Opening (15-20s)**: “PixelBot is a retro handheld support agent for firmware/setup, recommendations, and store policy questions.”
+2. **User journey (60-90s)**:
+   - Start from empty state and click a starter chip.
+   - Show recommendation clarifier behavior (budget + form factor).
+   - Show broken-device flow ending with the exact human handoff phrase.
+3. **Owner journey (45-60s)**:
+   - Open Admin mode, switch tone/boundary presets, and show style change in next answer.
+   - Highlight locked handoff phrase for compliance consistency.
+4. **Reliability & observability (30-45s)**:
+   - Explain deterministic guardrails in API route.
+   - Show Phoenix trace for one request and call out latency plus token/cost attributes.
+
+## Rubric mapping (CSA overview)
+- **Technical execution (30%)**: streaming chat, KB retrieval, deterministic guardrails, telemetry-backed tracing/cost attributes.
+- **Product thinking (30%)**: guided first turn, clear boundaries, recommendation/handoff journeys, and admin controls.
+- **Communication (20%)**: runnable local setup, manual test matrix, and explicit walkthrough script.
+- **Creativity and ambition (20%)**: blended deterministic + LLM behavior, configurable admin mode, and observability polish.
+
+## Next 3 features (real product path)
+1. **Tool-calling for real operations**: mock order lookup / repair ticket creation with confirmation messages.
+2. **Persistent business settings**: save admin tone/boundary presets and add role-based edit access.
+3. **Session analytics dashboard**: top intents, unresolved queries, handoff rate, and recommendation conversion.
 
