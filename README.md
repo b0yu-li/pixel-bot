@@ -92,9 +92,29 @@ Then open:
 
 ## Phoenix telemetry validation (LLM calls only)
 1. Start Phoenix (`phoenix serve`) and confirm UI is reachable at `http://127.0.0.1:6006`.
-2. Start the app (`npm run dev`) and send at least one in-scope chat message that reaches the model.
-3. In Phoenix UI, confirm a new trace appears under project `pixel-bot-local` (or your `PHOENIX_PROJECT_NAME`).
-4. Note: this iteration traces **LLM calls only**; deterministic early-return guardrails may not create model traces.
+2. Start the app (`npm run dev`) and send one deterministic guardrail prompt (for example, an out-of-scope request) and one in-scope prompt that reaches the model.
+3. In Phoenix UI, clear the filter box and keep `Root Spans: All`.
+4. Confirm traces appear under project `pixel-bot-local` (or your `PHOENIX_PROJECT_NAME`) and verify:
+   - Route span `pixelbot.chat.request` has non-empty status.
+   - LLM path includes `pixelbot.chat.llm` with model metadata.
+   - Guardrail path sets `pixelbot.response.path=guardrail` and reason attributes.
+5. If rows still appear as generic HTTP spans only, restart `npm run dev` after env/config edits and retry both prompts.
+
+### If `kind` or `status` still look empty/unknown in Phoenix
+- Clear the filter box first. A filter like `span_kind == 'LLM'` can hide all rows if indexing is delayed.
+- Keep `Root Spans` as `All`, then add columns for `name`, `span_kind`, `status`, and `openinference.span.kind`.
+- Open one `pixelbot.chat.request` row and verify attributes include:
+  - `span_kind=CHAIN`
+  - `otel.status_code=OK` (or `ERROR`)
+  - `status=OK` (or `ERROR`)
+- Open one `pixelbot.chat.llm` row and verify attributes include:
+  - `span_kind=LLM`
+  - `openinference.span.kind=LLM`
+  - `llm.model_name=<your model>`
+- Known-good filter examples:
+  - `name contains 'pixelbot.chat'`
+  - `span_kind == 'LLM'`
+- Note: instrumentation exports a focused subset of spans (`pixelbot.chat*`, `ai.streamText*`, or spans with `openinference.span.kind`) to reduce noisy framework rows like `POST /api/chat`.
 
 ## Next improvements (if more time)
 - Replace the toy retrieval scoring with embeddings (still local) for better grounding.
