@@ -215,7 +215,7 @@ export default function Page() {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
     setInput("");
-    sendMessage({ text: trimmed });
+    sendMessage({ text: trimmed }, { body: { runtimeConfig } });
   };
 
   const resetConversation = () => {
