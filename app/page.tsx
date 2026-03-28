@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DefaultChatTransport } from "ai";
 import ReactMarkdown from "react-markdown";
 
@@ -75,6 +75,11 @@ const STARTER_PROMPTS = [
   },
 ] as const;
 
+type MockHandoffTicketState =
+  | { phase: "loading" }
+  | { phase: "ok"; ticketId: string; createdAt: string }
+  | { phase: "error"; message: string };
+
 export default function Page() {
   const [isBooting, setIsBooting] = useState(true);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -125,18 +130,77 @@ export default function Page() {
     return null;
   }, [messages]);
 
-  const messageText = (message: (typeof messages)[number]) =>
-    message.parts
+  const messageText = useCallback((message: (typeof messages)[number]) => {
+    return message.parts
       .filter((p) => p.type === "text")
       .map((p) => p.text)
       .join("")
       .trimEnd();
+  }, []);
+
+  const handoffRequestedRef = useRef(new Set<string>());
+  const [mockHandoffTickets, setMockHandoffTickets] = useState<
+    Record<string, MockHandoffTicketState>
+  >({});
 
   const showStandaloneLoading = isLoading && !latestAssistantMessageId;
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, status]);
+
+  useEffect(() => {
+    if (status !== "ready") return;
+    for (const m of messages) {
+      if (m.role !== "assistant") continue;
+      const t = messageText(m);
+      if (t !== HANDOFF_TRIGGER_PHRASE) continue;
+      if (handoffRequestedRef.current.has(m.id)) continue;
+      handoffRequestedRef.current.add(m.id);
+      setMockHandoffTickets((prev) => ({ ...prev, [m.id]: { phase: "loading" } }));
+      void (async () => {
+        try {
+          const res = await fetch("/api/handoff", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              reason: "repair_handoff",
+              messageCount: messages.length,
+            }),
+          });
+          const data = (await res.json()) as {
+            ticketId?: string;
+            createdAt?: string;
+            error?: string;
+          };
+          if (!res.ok) {
+            throw new Error(data?.error ?? `HTTP ${res.status}`);
+          }
+          if (!data.ticketId || !data.createdAt) {
+            throw new Error("Invalid response");
+          }
+          const ticketId = data.ticketId;
+          const createdAt = data.createdAt;
+          setMockHandoffTickets((prev) => ({
+            ...prev,
+            [m.id]: {
+              phase: "ok",
+              ticketId,
+              createdAt,
+            },
+          }));
+        } catch (e) {
+          setMockHandoffTickets((prev) => ({
+            ...prev,
+            [m.id]: {
+              phase: "error",
+              message: e instanceof Error ? e.message : "Request failed",
+            },
+          }));
+        }
+      })();
+    }
+  }, [messages, status, messageText]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -157,7 +221,15 @@ export default function Page() {
   const resetConversation = () => {
     setMessages([]);
     setInput("");
+    handoffRequestedRef.current.clear();
+    setMockHandoffTickets({});
   };
+
+  const copyTicketId = useCallback(async (ticketId: string) => {
+    try {
+      await navigator.clipboard.writeText(ticketId);
+    } catch {}
+  }, []);
 
   return (
     <main className="container">
@@ -362,6 +434,7 @@ export default function Page() {
           messages.map((m) => (
             (() => {
               const text = messageText(m);
+              const ticket = mockHandoffTickets[m.id];
               const isStreamingAssistant =
                 isLoading &&
                 m.role === "assistant" &&
@@ -397,6 +470,39 @@ export default function Page() {
                 ) : (
                   <ReactMarkdown skipHtml={true}>{text}</ReactMarkdown>
                 )}
+                {ticket ? (
+                  <div className="mockHandoffCard" aria-live="polite">
+                    <div className="mockHandoffCardTitle">Mock repair ticket (demo)</div>
+                    {ticket.phase === "loading" ? (
+                      <p className="mockHandoffCardLine">Creating demo ticket…</p>
+                    ) : null}
+                    {ticket.phase === "ok" ? (
+                      <>
+                        <p className="mockHandoffTicketId">
+                          <code>{ticket.ticketId}</code>
+                        </p>
+                        <p className="mockHandoffCardMeta">
+                          {new Date(ticket.createdAt).toLocaleString()}
+                        </p>
+                        <button
+                          type="button"
+                          className="ghostButton mockHandoffCopy"
+                          onClick={() => void copyTicketId(ticket.ticketId)}
+                        >
+                          Copy ID
+                        </button>
+                        <p className="mockHandoffFootnote">
+                          No external system—shown for prototype escalation only.
+                        </p>
+                      </>
+                    ) : null}
+                    {ticket.phase === "error" ? (
+                      <p className="mockHandoffError" role="alert">
+                        {ticket.message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
               );

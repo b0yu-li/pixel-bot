@@ -6,6 +6,7 @@ PixelBot is a prototype AI customer support agent for a retro handheld shop. It 
 - Lead qualification: when the user asks for a recommendation, it asks for budget + preferred form factor before recommending anything.
 - Human handoff (mock): when a user reports a broken device and provides both ZIP code + issue details, it outputs the exact trigger phrase:
   > I'll connect you with a human technician to finalize your repair quote.
+  The UI then calls `POST /api/handoff` to show a demo repair ticket id (no external system).
 
 ## Quickstart
 
@@ -95,6 +96,7 @@ Then open:
 - `src/lib/handoff.ts` also classifies out-of-scope requests, including mixed-domain messages (unrelated + in-scope keywords).
 - `src/lib/chat-path.ts` mirrors production guardrail order (scope, handoff, repair ZIP, lead qualification) before the LLM path; `src/lib/chat-prompt.ts` builds the system prompt used by both the API route and evals.
 - The API route calls `resolveChatPath` then streams with `streamText` when the path is LLM.
+- After the UI shows the repair handoff phrase, the client calls `POST /api/handoff` (mock ticket id + OpenTelemetry span `pixelbot.handoff.mock_ticket`; no external ticketing system).
 
 ## Product decisions
 - **Configurable support persona**: session-level admin controls make the prototype feel like an agent platform.
@@ -121,6 +123,7 @@ Then open:
 2. **Broken-device escalation**
    - Input: “My handheld screen is cracked” + ZIP + issue details.
    - Expected: outputs exactly: `I'll connect you with a human technician to finalize your repair quote.`
+   - **Mock ticket (demo):** right after, the UI shows a **Mock repair ticket** card with a `DEMO-…` id. In DevTools Network, `POST /api/handoff` returns `{ ticketId, createdAt }`. The terminal running `npm run dev` logs `[pixelbot.handoff] mock ticket`.
 3. **Out-of-scope boundary**
    - Input: weather/crypto/medical/legal unrelated questions.
    - Expected: polite refusal with redirection to retro-handheld/store-policy scope.
@@ -140,6 +143,7 @@ Then open:
    - Route span `pixelbot.chat.request` has non-empty status.
    - LLM path includes `pixelbot.chat.llm` with model metadata.
    - Guardrail path sets `pixelbot.response.path=guardrail` and reason attributes.
+   - After a repair handoff (see manual test #2), a second request runs: span `pixelbot.handoff.mock_ticket` with `pixelbot.component=api.handoff` and `pixelbot.handoff.ticket_id` matching the UI card.
 5. If rows still appear as generic HTTP spans only, restart `npm run dev` after env/config edits and retry both prompts.
 
 ### If `kind` or `status` still look empty/unknown in Phoenix
@@ -155,6 +159,7 @@ Then open:
   - `llm.model_name=<your model>`
 - Known-good filter examples:
   - `name contains 'pixelbot.chat'`
+  - `name contains 'handoff'` (mock ticket after repair escalation)
   - `span_kind == 'LLM'`
 - Note: instrumentation exports a focused subset of spans (`pixelbot.chat*`, `ai.streamText*`, or spans with `openinference.span.kind`) to reduce noisy framework rows like `POST /api/chat`.
 
@@ -169,13 +174,13 @@ Then open:
 2. **User journey (60-90s)**:
    - Start from empty state and click a starter chip.
    - Show recommendation clarifier behavior (budget + form factor).
-   - Show broken-device flow ending with the exact human handoff phrase.
+   - Show broken-device flow ending with the exact human handoff phrase and the mock ticket card (`DEMO-…` id).
 3. **Owner journey (45-60s)**:
    - Open Admin mode, switch tone/boundary presets, and show style change in next answer.
    - Highlight locked handoff phrase for compliance consistency.
 4. **Reliability & observability (30-45s)**:
    - Explain deterministic guardrails in API route.
-   - Show Phoenix trace for one request and call out latency plus token/cost attributes.
+   - Show Phoenix traces (for example `pixelbot.chat.request` and, after repair handoff, `pixelbot.handoff.mock_ticket`) and call out latency plus token/cost attributes.
 
 ## Rubric mapping (CSA overview)
 - **Technical execution (30%)**: streaming chat, KB retrieval, deterministic guardrails, telemetry-backed tracing/cost attributes.

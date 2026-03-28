@@ -325,6 +325,67 @@ h1 {
   background: rgba(133, 36, 67, 0.75);
 }
 
+
+/* Mock handoff ticket card (demo) */
+.mockHandoffCard {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 2px solid rgba(141, 241, 115, 0.35);
+  background: rgba(23, 47, 28, 0.45);
+  box-shadow: var(--pixel-shadow-sm);
+}
+
+.mockHandoffCardTitle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  color: var(--success);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.mockHandoffCardLine {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-subtitle);
+}
+
+.mockHandoffTicketId {
+  margin: 6px 0 4px;
+}
+
+.mockHandoffTicketId code {
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  color: var(--accent);
+  background: rgba(15, 13, 42, 0.55);
+  padding: 4px 8px;
+  border: 1px solid rgba(86, 232, 255, 0.25);
+}
+
+.mockHandoffCardMeta {
+  margin: 0 0 8px;
+  font-size: 0.95em;
+  color: var(--muted);
+}
+
+.mockHandoffCopy {
+  margin-top: 4px;
+  font-size: var(--fs-button);
+}
+
+.mockHandoffFootnote {
+  margin: 10px 0 0;
+  font-size: 0.85em;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.mockHandoffError {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--fs-subtitle);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .statusStreaming {
     animation: none;
