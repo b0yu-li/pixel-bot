@@ -1,7 +1,6 @@
 import {
   streamText,
   convertToModelMessages,
-  createUIMessageStream,
   createUIMessageStreamResponse,
 } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
@@ -12,7 +11,13 @@ import {
   context as otelContext,
   trace,
 } from "@opentelemetry/api";
-import { resolveChatPath } from "../../../src/lib/chat-path";
+import { createAssistantTextStream } from "@/lib/assistant-text-stream";
+import {
+  createLlmStreamFinalizer,
+  setPixelbotSpanKind,
+  setPixelbotSpanStatus,
+} from "@/lib/chat-otel";
+import { resolveChatPath } from "@/lib/chat-path";
 
 export const maxDuration = 30;
 
@@ -26,18 +31,6 @@ export async function POST(req: Request) {
     { kind: SpanKind.SERVER },
     ROOT_CONTEXT,
     async (requestSpan) => {
-    const setKindAttributes = (span: any, kind: "CHAIN" | "LLM") => {
-      span.setAttribute("openinference.span.kind", kind);
-      span.setAttribute("span_kind", kind);
-      span.setAttribute("pixelbot.span.kind", kind);
-    };
-
-    const setStatusAttributes = (span: any, status: "OK" | "ERROR") => {
-      span.setAttribute("otel.status_code", status);
-      span.setAttribute("status", status);
-      span.setAttribute("pixelbot.status", status);
-    };
-
     requestSpan.setAttribute("openinference.span.kind", "CHAIN");
     requestSpan.setAttribute("span_kind", "CHAIN");
     requestSpan.setAttribute("pixelbot.component", "api.chat");
@@ -46,27 +39,14 @@ export async function POST(req: Request) {
 
     try {
       if (!process.env.OPENROUTER_API_KEY?.trim()) {
-        const assistantMessageId = `assistant-${Date.now()}`;
         const missingKeyText =
           "PixelBot can’t reach the AI service yet. Add OPENROUTER_API_KEY to `.env.local` (see README), then restart `npm run dev`.";
-        const stream = createUIMessageStream({
-          execute: ({ writer }) => {
-            writer.write({ type: "start", messageId: assistantMessageId });
-            writer.write({ type: "text-start", id: assistantMessageId });
-            writer.write({
-              type: "text-delta",
-              id: assistantMessageId,
-              delta: missingKeyText,
-            });
-            writer.write({ type: "text-end", id: assistantMessageId });
-            writer.write({ type: "finish", finishReason: "stop" });
-          },
-        });
+        const stream = createAssistantTextStream(missingKeyText);
 
         requestSpan.setAttribute("pixelbot.response.path", "config_error");
         requestSpan.setAttribute("pixelbot.response.reason", "missing_openrouter_api_key");
-        setKindAttributes(requestSpan, "CHAIN");
-        setStatusAttributes(requestSpan, "OK");
+        setPixelbotSpanKind(requestSpan, "CHAIN");
+        setPixelbotSpanStatus(requestSpan, "OK");
         requestSpan.setStatus({ code: SpanStatusCode.OK });
         requestSpan.end();
 
@@ -94,21 +74,12 @@ export async function POST(req: Request) {
       requestSpan.setAttribute("pixelbot.messages.count", normalizedMessages.length);
 
       const quickResponse = (text: string, reason: string) => {
-        const assistantMessageId = `assistant-${Date.now()}`;
-        const stream = createUIMessageStream({
-          execute: ({ writer }) => {
-            writer.write({ type: "start", messageId: assistantMessageId });
-            writer.write({ type: "text-start", id: assistantMessageId });
-            writer.write({ type: "text-delta", id: assistantMessageId, delta: text });
-            writer.write({ type: "text-end", id: assistantMessageId });
-            writer.write({ type: "finish", finishReason: "stop" });
-          },
-        });
+        const stream = createAssistantTextStream(text);
 
         requestSpan.setAttribute("pixelbot.response.path", "guardrail");
         requestSpan.setAttribute("pixelbot.response.reason", reason);
-        setKindAttributes(requestSpan, "CHAIN");
-        setStatusAttributes(requestSpan, "OK");
+        setPixelbotSpanKind(requestSpan, "CHAIN");
+        setPixelbotSpanStatus(requestSpan, "OK");
         requestSpan.setStatus({ code: SpanStatusCode.OK });
         requestSpan.end();
 
@@ -135,31 +106,12 @@ export async function POST(req: Request) {
         { kind: SpanKind.CLIENT },
         llmParentContext,
         async (llmSpan) => {
-        let finalized = false;
-        const finalizeSpans = (status: "OK" | "ERROR", errorMessage?: string) => {
-          if (finalized) return;
-          finalized = true;
+        const { finalizeOnce } = createLlmStreamFinalizer({
+          llmSpan,
+          requestSpan,
+        });
 
-          setStatusAttributes(llmSpan, status);
-          llmSpan.setStatus(
-            status === "OK"
-              ? { code: SpanStatusCode.OK }
-              : { code: SpanStatusCode.ERROR, message: errorMessage ?? "Stream error" },
-          );
-          llmSpan.end();
-
-          requestSpan.setAttribute("pixelbot.response.path", "llm");
-          setKindAttributes(requestSpan, "CHAIN");
-          setStatusAttributes(requestSpan, status);
-          requestSpan.setStatus(
-            status === "OK"
-              ? { code: SpanStatusCode.OK }
-              : { code: SpanStatusCode.ERROR, message: errorMessage ?? "Stream error" },
-          );
-          requestSpan.end();
-        };
-
-        setKindAttributes(llmSpan, "LLM");
+        setPixelbotSpanKind(llmSpan, "LLM");
         llmSpan.setAttribute("pixelbot.component", "api.chat");
         llmSpan.setAttribute("llm.model_name", modelName);
         llmSpan.setAttribute("pixelbot.response.path", "llm");
@@ -179,12 +131,12 @@ export async function POST(req: Request) {
             },
           },
           onFinish: () => {
-            finalizeSpans("OK");
+            finalizeOnce("OK");
           },
           onError: ({ error }) => {
             const errorMessage =
               error instanceof Error ? error.message : "Unknown streaming error";
-            finalizeSpans("ERROR", errorMessage);
+            finalizeOnce("ERROR", errorMessage);
           },
         });
 
@@ -195,8 +147,8 @@ export async function POST(req: Request) {
       return result.toUIMessageStreamResponse();
     } catch (error) {
       requestSpan.recordException(error as Error);
-      setKindAttributes(requestSpan, "CHAIN");
-      setStatusAttributes(requestSpan, "ERROR");
+      setPixelbotSpanKind(requestSpan, "CHAIN");
+      setPixelbotSpanStatus(requestSpan, "ERROR");
       requestSpan.setStatus({
         code: SpanStatusCode.ERROR,
         message: error instanceof Error ? error.message : "Unknown error",
