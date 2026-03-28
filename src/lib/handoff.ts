@@ -23,27 +23,38 @@ function messageToText(message: MessageLike): string {
     .join("");
 }
 
+/** Strong damage / failure signals — safe to treat as repair intent without screen/display alone. */
+const STRONG_DAMAGE_KEYWORDS = [
+  "broken",
+  "shattered",
+  "cracked",
+  "damaged",
+  "won't turn on",
+  "wont turn on",
+  "not turning on",
+  "dead",
+  "won't boot",
+  "wont boot",
+  "no power",
+  "power issue",
+  "water damage",
+  "liquid",
+];
+
+/**
+ * "screen" / "display" alone match many benign messages (brightness, resolution).
+ * Only count them when paired with damage/repair context.
+ */
 function includesBrokenDeviceSignal(text: string): boolean {
   const t = text.toLowerCase();
-  const keywords = [
-    "broken",
-    "shattered",
-    "cracked",
-    "damaged",
-    "screen",
-    "display",
-    "won't turn on",
-    "wont turn on",
-    "not turning on",
-    "dead",
-    "won't boot",
-    "wont boot",
-    "no power",
-    "power issue",
-    "water damage",
-    "liquid",
-  ];
-  return keywords.some((k) => t.includes(k));
+  if (STRONG_DAMAGE_KEYWORDS.some((k) => t.includes(k))) return true;
+
+  if (/\b(screen|display)\b/.test(t)) {
+    const damageOrRepairContext =
+      /crack|break|shatter|damage|repair|broken|fix|replace|shattered|issue|problem|quote|wont|won't|dead|flicker|lines|black/i;
+    return damageOrRepairContext.test(t);
+  }
+  return false;
 }
 
 export type HandoffState = {
@@ -80,6 +91,8 @@ export type LeadQualificationState = {
 export type ScopeState = {
   isOutOfScope: boolean;
   reason: string;
+  /** True when both in-scope and out-of-scope signals appear (e.g. retro + unrelated product). */
+  mixedDomain: boolean;
 };
 
 function extractBudget(text: string): boolean {
@@ -106,6 +119,24 @@ function extractFormFactor(text: string): boolean {
   return keywords.some((k) => t.includes(k));
 }
 
+const RECOMMENDATION_SIGNALS = [
+  "recommend",
+  "suggest",
+  "what should i get",
+  "what device",
+  "which handheld",
+  "best for",
+  "i want a",
+  "looking for",
+  "should i buy",
+  "recommend me",
+] as const;
+
+/**
+ * If any user message asked for a recommendation, stay in that flow across turns
+ * (follow-ups often only add "$120" / "pocket" without repeating "recommend").
+ * If the latest message clearly pivots to policy-only support, exit recommendation mode.
+ */
 export function evaluateLeadQualification(
   messages: MessageLike[],
 ): LeadQualificationState {
@@ -114,24 +145,33 @@ export function evaluateLeadQualification(
     .map((m) => messageToText(m));
 
   const lastUserText = userTexts[userTexts.length - 1] ?? "";
-  const t = lastUserText.toLowerCase();
+  const lastLower = lastUserText.toLowerCase();
 
-  const recommendationSignals = [
-    "recommend",
-    "suggest",
-    "what should i get",
-    "what device",
-    "which handheld",
-    "best for",
-    "i want a",
-    "looking for",
-    "should i buy",
-    "recommend me",
-  ];
+  const messageAsksRecommendation = (text: string) => {
+    const lower = text.toLowerCase();
+    return RECOMMENDATION_SIGNALS.some((k) => lower.includes(k));
+  };
 
-  const isRecommendationRequest = recommendationSignals.some((k) =>
-    t.includes(k),
+  const anyUserAskedRecommendation = userTexts.some((text) =>
+    messageAsksRecommendation(text),
   );
+
+  const lastMessagePolicyPivot =
+    userTexts.length > 1 &&
+    [
+      "return policy",
+      "return window",
+      "refund",
+      "how long does shipping",
+      "track my order",
+      "warranty policy",
+    ].some((k) => lastLower.includes(k)) &&
+    !messageAsksRecommendation(lastUserText);
+
+  let isRecommendationRequest = anyUserAskedRecommendation;
+  if (lastMessagePolicyPivot) {
+    isRecommendationRequest = false;
+  }
 
   const budgetFound = userTexts.some(extractBudget);
   const formFactorFound = userTexts.some(extractFormFactor);
@@ -182,13 +222,27 @@ export function evaluateScope(text: string): ScopeState {
   const hasInScope = inScopeSignals.some((k) => t.includes(k));
   const hasOutScope = outOfScopeSignals.some((k) => t.includes(k));
 
+  // Pure out-of-domain: block.
   if (hasOutScope && !hasInScope) {
     return {
       isOutOfScope: true,
       reason: "Outside retro-handheld and store-policy support scope.",
+      mixedDomain: false,
     };
   }
 
-  return { isOutOfScope: false, reason: "Looks in scope or neutral." };
-}
+  // Mixed domain (e.g. retro + unrelated product): stay in app but refuse unrelated parts deterministically.
+  if (hasOutScope && hasInScope) {
+    return {
+      isOutOfScope: true,
+      reason: "Mixed or out-of-scope topic combined with in-scope keywords.",
+      mixedDomain: true,
+    };
+  }
 
+  return {
+    isOutOfScope: false,
+    reason: "Looks in scope or neutral.",
+    mixedDomain: false,
+  };
+}

@@ -462,10 +462,32 @@ export default function Page() {
       </div>
 
       {error ? (
-        <p className="error">
-          Something went wrong:{" "}
-          {error instanceof Error ? error.message : String(error)}. Try again,
-          or use one of the starter prompts to restart the flow.
+        <p className="error" role="alert">
+          {(() => {
+            const msg =
+              error instanceof Error ? error.message : String(error);
+            const lower = msg.toLowerCase();
+            if (
+              lower.includes("openrouter") ||
+              lower.includes("api key") ||
+              lower.includes("unauthorized") ||
+              lower.includes("401")
+            ) {
+              return (
+                <>
+                  AI service isn’t configured or the key was rejected. Add{" "}
+                  <code>OPENROUTER_API_KEY</code> to <code>.env.local</code>{" "}
+                  (see README), restart <code>npm run dev</code>, then try again.
+                </>
+              );
+            }
+            return (
+              <>
+                Something went wrong: {msg}. Try again, or use a starter prompt
+                to restart the flow.
+              </>
+            );
+          })()}
         </p>
       ) : null}
     </main>

@@ -8,7 +8,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:eval": "RUN_LLM_EVAL=1 vitest run --config vitest.smoke.config.ts",
+    "test:eval:judge": "RUN_LLM_EVAL=1 ENABLE_LLM_JUDGE=1 vitest run --config vitest.smoke.config.ts"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +40,8 @@
     "@types/react": "^19.2.14",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "zod": "^4.3.6"
   }
 }

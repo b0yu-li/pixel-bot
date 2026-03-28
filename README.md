@@ -9,13 +9,21 @@ PixelBot is a prototype AI customer support agent for a retro handheld shop. It 
 
 ## Quickstart
 
+**Stack:** Next.js (App Router), React, Vercel AI SDK + OpenRouter, TypeScript. Core chat works without Phoenix; tracing is optional.
+
 ### 1) Install
 ```bash
 npm install
 ```
 
 ### 2) Configure environment
-Create a file named `.env.local` and set:
+Copy the example env file and fill in your key (recommended):
+
+```bash
+cp .env.example .env.local
+```
+
+Or create `.env.local` manually and set:
 ```bash
 OPENROUTER_API_KEY=your_openrouter_api_key
 OPENROUTER_MODEL=qwen/qwen3.5-plus-02-15
@@ -34,6 +42,30 @@ npm run dev
 
 Open:
 - http://localhost:3000
+
+Without `OPENROUTER_API_KEY`, the chat API returns a clear setup message (and the UI explains common API-key errors).
+
+### Tests (optional)
+```bash
+npm test
+```
+Runs Vitest unit tests: guardrail logic (`src/lib/handoff.ts`), system prompt assembly (`src/lib/chat-prompt.ts`), and routing (`src/lib/chat-path.ts`). No API calls.
+
+Optional live LLM checks (requires `OPENROUTER_API_KEY`; `vitest.smoke.setup.ts` loads `.env` / `.env.local` via Vite’s `loadEnv`, same as typical Vite projects):
+
+```bash
+npm run test:eval
+```
+
+Runs two smoke cases with `generateText` using the same prompt path as production.
+
+Optional minimal LLM-as-judge rubric (cheap second model; set `OPENROUTER_JUDGE_MODEL` if you like):
+
+```bash
+npm run test:eval:judge
+```
+
+Runs smoke evals plus one structured JSON rubric pass (`in_scope`, `grounded_or_hedges`, `concise`) via `src/lib/reply-judge.ts`.
 
 ### 4) (Optional) Run local Arize Phoenix telemetry
 Start Phoenix locally in a separate terminal:
@@ -59,15 +91,22 @@ Then open:
 - `src/lib/retrieval.ts` does a lightweight keyword/token overlap scoring to pick the most relevant snippets for the current user message.
 
 ### Behavior logic
-- `src/lib/handoff.ts` detects recommendation intent (budget + form factor) and broken-device handoff readiness (ZIP + issue signals).
-- `src/lib/handoff.ts` also classifies out-of-scope requests.
-- The API route enforces deterministic guardrails first (scope handling, recommendation clarifiers, exact handoff phrase), then uses LLM generation for normal in-scope questions.
+- `src/lib/handoff.ts` detects recommendation intent across the whole thread (so follow-ups without “recommend” still count), budget + form factor, and broken-device handoff readiness (ZIP + issue signals).
+- `src/lib/handoff.ts` also classifies out-of-scope requests, including mixed-domain messages (unrelated + in-scope keywords).
+- `src/lib/chat-path.ts` mirrors production guardrail order (scope, handoff, repair ZIP, lead qualification) before the LLM path; `src/lib/chat-prompt.ts` builds the system prompt used by both the API route and evals.
+- The API route calls `resolveChatPath` then streams with `streamText` when the path is LLM.
 
 ## Product decisions
 - **Configurable support persona**: session-level admin controls make the prototype feel like an agent platform.
 - **Deterministic critical paths**: scope boundaries and escalation/handoff are code-enforced for reliability.
 - **Retrieval-first responses**: weighted retrieval favors title/tags/question relevance over long-answer noise.
 - **Guided first-turn UX**: starter prompt chips and capability framing reduce blank-screen friction and drive realistic support flows.
+
+## Trade-offs (prototype scope)
+- **Keyword retrieval vs embeddings**: token overlap is fast and transparent for a demo; embeddings + vector DB would scale KB quality at the cost of infra and tuning time.
+- **Heuristic scope and handoff**: rules are easy to reason about and test; they can miss nuance or edge phrasing, so critical paths are narrowed to explicit signals (e.g. repair issue + ZIP).
+- **Session-only admin config**: no persistence keeps the stack simple; production would want auth, versioning, and audit logs.
+- **LLM for normal answers, code for guardrails**: balances reliability on escalation and policy boundaries with flexible language for in-scope Q&A.
 
 ## What admin/config mode demonstrates
 - A business owner can tune assistant tone and boundaries without code edits.
@@ -76,14 +115,16 @@ Then open:
 
 ## Manual test matrix
 1. **Recommendation clarification**
-   - Input: “Recommend me a handheld for GBA under $100.”
-   - Expected: asks for any missing budget/form-factor details before recommendation.
+   - Input: “Can you recommend something for GBA and SNES?” (no budget or form-factor hint in the same message—avoid “under $…” or “pocket/handheld/…” so the clarifier runs.)
+   - Expected: asks for **budget** and **preferred form factor** before recommending a device.
+   - **Multi-turn check:** send “Recommend a retro handheld” first, then “$120 and pocket-sized” in a second message—expected: still treated as a recommendation flow and, once both fields are present, the model may recommend.
 2. **Broken-device escalation**
    - Input: “My handheld screen is cracked” + ZIP + issue details.
    - Expected: outputs exactly: `I'll connect you with a human technician to finalize your repair quote.`
 3. **Out-of-scope boundary**
    - Input: weather/crypto/medical/legal unrelated questions.
    - Expected: polite refusal with redirection to retro-handheld/store-policy scope.
+   - **Mixed-topic check:** e.g. “retro emulator on my iPhone” — expected: deterministic refusal explaining handheld-only scope (unrelated product + in-scope keywords).
 4. **KB-grounded policy**
    - Input: “What is your return window?”
    - Expected: answer aligns with the KB return policy.
@@ -117,6 +158,12 @@ Then open:
   - `span_kind == 'LLM'`
 - Note: instrumentation exports a focused subset of spans (`pixelbot.chat*`, `ai.streamText*`, or spans with `openinference.span.kind`) to reduce noisy framework rows like `POST /api/chat`.
 
+## Demo pre-flight checklist
+1. Confirm `.env.local` exists with a valid `OPENROUTER_API_KEY`; restart `npm run dev` after changes.
+2. Optional: start Phoenix (`phoenix serve`) if you want to show traces in the demo.
+3. Run `npm run lint` and `npm test` once before recording if you changed behavior.
+4. Follow the **Product walkthrough script** order below (chip → clarifier or policy → repair + ZIP → admin).
+
 ## Product walkthrough script (demo-ready)
 1. **Opening (15-20s)**: “PixelBot is a retro handheld support agent for firmware/setup, recommendations, and store policy questions.”
 2. **User journey (60-90s)**:
@@ -140,4 +187,9 @@ Then open:
 1. **Tool-calling for real operations**: mock order lookup / repair ticket creation with confirmation messages.
 2. **Persistent business settings**: save admin tone/boundary presets and add role-based edit access.
 3. **Session analytics dashboard**: top intents, unresolved queries, handoff rate, and recommendation conversion.
+
+## AI tooling (Cursor / LLM assistants)
+- Used for scaffolding Next.js + AI SDK wiring, retrieval/guardrail modules, and README polish.
+- **What worked well:** fast iteration on `app/api/chat/route.ts` and `src/lib/handoff.ts`, plus consistent test cases for deterministic behavior.
+- **What to watch:** always re-verify guardrail ordering and prompt wording in the actual UI—LLM-suggested edits need a quick manual pass against the test matrix.
 

@@ -12,12 +12,7 @@ import {
   context as otelContext,
   trace,
 } from "@opentelemetry/api";
-import { getRelevantSnippets } from "../../../src/lib/retrieval";
-import {
-  evaluateHandoff,
-  evaluateLeadQualification,
-  evaluateScope,
-} from "../../../src/lib/handoff";
+import { resolveChatPath } from "../../../src/lib/chat-path";
 
 export const maxDuration = 30;
 
@@ -50,6 +45,34 @@ export async function POST(req: Request) {
     requestSpan.setAttribute("http.method", "POST");
 
     try {
+      if (!process.env.OPENROUTER_API_KEY?.trim()) {
+        const assistantMessageId = `assistant-${Date.now()}`;
+        const missingKeyText =
+          "PixelBot can’t reach the AI service yet. Add OPENROUTER_API_KEY to `.env.local` (see README), then restart `npm run dev`.";
+        const stream = createUIMessageStream({
+          execute: ({ writer }) => {
+            writer.write({ type: "start", messageId: assistantMessageId });
+            writer.write({ type: "text-start", id: assistantMessageId });
+            writer.write({
+              type: "text-delta",
+              id: assistantMessageId,
+              delta: missingKeyText,
+            });
+            writer.write({ type: "text-end", id: assistantMessageId });
+            writer.write({ type: "finish", finishReason: "stop" });
+          },
+        });
+
+        requestSpan.setAttribute("pixelbot.response.path", "config_error");
+        requestSpan.setAttribute("pixelbot.response.reason", "missing_openrouter_api_key");
+        setKindAttributes(requestSpan, "CHAIN");
+        setStatusAttributes(requestSpan, "OK");
+        requestSpan.setStatus({ code: SpanStatusCode.OK });
+        requestSpan.end();
+
+        return createUIMessageStreamResponse({ stream });
+      }
+
       const body = await req.json();
       const messages = (body?.messages ?? []) as any[];
       const normalizedMessages = messages.map((message: any) =>
@@ -69,28 +92,6 @@ export async function POST(req: Request) {
       };
 
       requestSpan.setAttribute("pixelbot.messages.count", normalizedMessages.length);
-
-      const messageToText = (message: any): string => {
-        if (typeof message?.content === "string") return message.content;
-        if (!Array.isArray(message?.parts)) return "";
-        return message.parts
-          .filter((p: any) => p?.type === "text" && typeof p?.text === "string")
-          .map((p: any) => String(p.text))
-          .join("");
-      };
-
-      const lastUserMessage = [...normalizedMessages]
-        .reverse()
-        .find((m) => m?.role === "user");
-      const lastUserText = messageToText(lastUserMessage);
-
-      const relevant = getRelevantSnippets(lastUserText, 4);
-      const handoff = evaluateHandoff(normalizedMessages as any);
-      const lead = evaluateLeadQualification(normalizedMessages as any);
-      const scope = evaluateScope(lastUserText);
-
-      const triggerPhrase =
-        "I'll connect you with a human technician to finalize your repair quote.";
 
       const quickResponse = (text: string, reason: string) => {
         const assistantMessageId = `assistant-${Date.now()}`;
@@ -114,79 +115,16 @@ export async function POST(req: Request) {
         return createUIMessageStreamResponse({ stream });
       };
 
-      // Deterministic guardrails first.
-      if (scope.isOutOfScope) {
-        return quickResponse(
-          "I can help with retro handheld questions (firmware/setup/compatibility) and store policies only. If you share a retro handheld issue or policy question, I can help right away.",
-          "out_of_scope",
-        );
+      const resolved = resolveChatPath({
+        normalizedMessages,
+        runtimeConfig,
+      });
+
+      if (resolved.path === "guardrail") {
+        return quickResponse(resolved.text, resolved.reason);
       }
 
-      if (handoff.readyForHandoff) {
-        return quickResponse(triggerPhrase, "handoff_ready");
-      }
-
-      if (handoff.issueFound && !handoff.zipFound) {
-        return quickResponse(
-          "I can help with that repair flow. Please share your 5-digit ZIP code so I can continue.",
-          "repair_missing_zip",
-        );
-      }
-
-      if (lead.isRecommendationRequest && !(lead.budgetFound && lead.formFactorFound)) {
-        return quickResponse(
-          "To recommend the right retro handheld, please share: (1) your budget range and (2) your preferred form factor (pocket/compact vs larger handheld).",
-          "recommendation_missing_fields",
-        );
-      }
-
-      const snippetsBlock =
-        relevant
-          .map((e) => `- ${e.title}: ${e.answer}`)
-          .join("\n") || "(No relevant snippets found.)";
-
-      const systemPrompt = [
-        "You are PixelBot, a friendly retro-handheld support agent.",
-        `Tone: ${runtimeConfig.tone ?? "Friendly, nostalgic, tech-savvy, and concise."}`,
-        "You only help with retro handhelds (firmware/setup/compatibility) and store policies.",
-        `Boundary summary: ${runtimeConfig.boundarySummary ?? "Only support retro handheld questions and store policies."}`,
-        "If a request is outside that scope, politely say you can only help with retro handhelds and store policies.",
-        "",
-        "Knowledge base (use these facts as the source of truth when relevant):",
-        snippetsBlock,
-        "",
-        "Lead qualification (recommendations):",
-        lead.isRecommendationRequest
-          ? [
-              "The user is asking for a device recommendation.",
-              handoff.readyForHandoff
-                ? "Ignore this section because a human handoff is required."
-                : lead.budgetFound && lead.formFactorFound
-                  ? "The user provided enough details. You may recommend a device."
-                  : "Ask for: (1) their budget range and (2) their preferred form factor (ex: pocket/compact vs larger handheld). Then wait for their answer before recommending anything.",
-            ].filter(Boolean).join("\n")
-          : "The user is not asking for a recommendation; answer normally.",
-        "",
-        "Human handoff (broken-device repair quote):",
-        handoff.readyForHandoff
-          ? [
-              "The user reported a broken retro handheld AND provided both ZIP code and issue details.",
-              "Output EXACTLY this trigger phrase and nothing else:",
-              triggerPhrase,
-            ].join("\n")
-          : [
-              "If the user reports a broken retro handheld but you are missing either ZIP code or issue details, ask for both:",
-              "- ZIP code (5 digits)",
-              "- A short description of what is broken (screen/display/power/etc.)",
-              "Do not output the trigger phrase until both are present.",
-            ].join("\n"),
-        "",
-        "Behavior guidelines:",
-        "- Be concise but helpful.",
-        "- When you mention store policies, stick to the knowledge base.",
-        "- Do not invent store policy details that are not in the knowledge base.",
-        "- If you are unsure, say what you need from the user and offer a handoff for repair quotes when appropriate.",
-      ].join("\n");
+      const { systemPrompt, normalizedMessages: messagesForModel } = resolved;
 
       const modelName = process.env.OPENROUTER_MODEL ?? "qwen/qwen3.5-plus-02-15";
       const model = openrouter(modelName);
@@ -225,7 +163,7 @@ export async function POST(req: Request) {
         llmSpan.setAttribute("pixelbot.component", "api.chat");
         llmSpan.setAttribute("llm.model_name", modelName);
         llmSpan.setAttribute("pixelbot.response.path", "llm");
-        const modelMessages = await convertToModelMessages(normalizedMessages as any);
+        const modelMessages = await convertToModelMessages(messagesForModel as any);
 
         const streamResult = streamText({
           model,
@@ -269,4 +207,3 @@ export async function POST(req: Request) {
     },
   );
 }
-
