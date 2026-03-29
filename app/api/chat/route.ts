@@ -14,6 +14,7 @@ import {
 import { createAssistantTextStream } from "@/lib/assistant-text-stream";
 import {
   createLlmStreamFinalizer,
+  setOpenInferenceLlmUsage,
   setPixelbotSpanKind,
   setPixelbotSpanStatus,
 } from "@/lib/chat-otel";
@@ -114,6 +115,7 @@ export async function POST(req: Request) {
         setPixelbotSpanKind(llmSpan, "LLM");
         llmSpan.setAttribute("pixelbot.component", "api.chat");
         llmSpan.setAttribute("llm.model_name", modelName);
+        llmSpan.setAttribute("llm.provider", "openrouter");
         llmSpan.setAttribute("pixelbot.response.path", "llm");
         const modelMessages = await convertToModelMessages(messagesForModel as any);
 
@@ -130,7 +132,8 @@ export async function POST(req: Request) {
               model: modelName,
             },
           },
-          onFinish: () => {
+          onFinish: (event) => {
+            setOpenInferenceLlmUsage(llmSpan, event.totalUsage);
             finalizeOnce("OK");
           },
           onError: ({ error }) => {

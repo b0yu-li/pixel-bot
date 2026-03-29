@@ -8,6 +8,7 @@
 # Caches / tooling
 /.turbo
 .npm-cache
+*.tsbuildinfo
 
 # Logs
 *.log
