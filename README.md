@@ -12,6 +12,8 @@ PixelBot is a prototype AI customer support agent for a retro handheld shop. It 
   > I'll connect you with a human technician to finalize your repair quote.
   The UI then calls `POST /api/handoff` to show a demo repair ticket id (no external system).
 
+<a id="csa-short-write-up"></a>
+
 ## 📝 CSA short write-up
 
 This section mirrors the CSA assignment brief: business context, user value, AI-assisted development, and product roadmap.
@@ -202,6 +204,8 @@ flowchart TD
 - 📚 **Retrieval-first responses:** weighted retrieval favors title/tags/question relevance over long-answer noise.
 - ✨ **Guided first-turn UX:** starter prompt chips and capability framing reduce blank-screen friction and drive realistic support flows.
 
+<a id="trade-offs-prototype-scope"></a>
+
 ## ⚖️ Trade-offs (prototype scope)
 - 🔎 **Keyword retrieval vs embeddings:** token overlap is fast and transparent for a demo; embeddings + vector DB would scale KB quality at the cost of infra and tuning time.
 - 📏 **Heuristic scope and handoff:** rules are easy to reason about and test; they can miss nuance or edge phrasing, so critical paths are narrowed to explicit signals (e.g. repair issue + ZIP).
@@ -296,6 +300,8 @@ CSA evaluates **technical execution (30%)**, **product thinking (30%)**, **commu
 - 🎯 **Product thinking:** guided first turn, clear boundaries, recommendation and handoff journeys, admin controls.
 - 📝 **Communication:** runnable setup (`npm install` + `npm run dev` or `build`/`start`), explicit walkthrough script, CSA short write-up.
 - ✨ **Creativity and ambition:** blended deterministic + LLM behavior, configurable admin mode, observability polish.
+
+<a id="next-3-features-real-product-path"></a>
 
 ## 🗺️ Next 3 features (real product path)
 1. 🔧 **Tool-calling for real operations:** mock order lookup / repair ticket creation with confirmation messages.
