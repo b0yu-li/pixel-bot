@@ -70,6 +70,16 @@ Submit the project as a **GitHub** repository (public or private with reviewer a
 
 **Minimal setup (CSA-style):** `npm install`, configure `.env.local`, then run locally. For Next.js, day-to-day development uses `npm run dev`. A production-style run is `npm run build` followed by `npm start` (see **Run** below).
 
+## Tech stack
+
+- **Frontend/UI:** Next.js App Router, React, TypeScript, Vercel AI SDK (`useChat`).
+- **Backend/API:** Next.js route handlers (`app/api/chat/route.ts`, `app/api/handoff/route.ts`), AI SDK `streamText`.
+- **Model provider:** OpenRouter (`OPENROUTER_API_KEY`, configurable model via `OPENROUTER_MODEL`).
+- **Agent logic:** Deterministic guardrails and routing in `src/lib/handoff.ts` and `src/lib/chat-path.ts`.
+- **Knowledge grounding:** Curated local KB (`src/lib/knowledge-base.ts`) + lightweight retrieval (`src/lib/retrieval.ts`).
+- **Observability:** OpenTelemetry spans with optional Arize Phoenix local viewer.
+- **Testing:** Vitest unit tests and optional smoke eval scripts.
+
 ### 1) Install
 ```bash
 npm install
@@ -145,6 +155,27 @@ Then open:
 - http://127.0.0.1:6006
 
 ## How it works
+
+### Architecture
+
+```mermaid
+flowchart TD
+  U[User in chat UI] --> FE[Next.js frontend app/page.tsx useChat]
+  FE --> API[POST /api/chat app/api/chat/route.ts]
+  API --> PATH[resolveChatPath guardrail/router]
+  PATH -->|Out of scope or deterministic rule| G[Guardrail response]
+  PATH -->|Repair ready ZIP + issue| H[Handoff phrase response]
+  PATH -->|Normal in-scope chat| R[Retrieval src/lib/retrieval.ts]
+  R --> KB[Knowledge base snippets src/lib/knowledge-base.ts]
+  KB --> LLM[OpenRouter model via streamText]
+  LLM --> FE
+  G --> FE
+  H --> FE
+  FE -->|After handoff phrase| HO[POST /api/handoff mock ticket]
+  HO --> FE
+  API -. telemetry .-> PHX[(Arize Phoenix optional)]
+  HO -. telemetry .-> PHX
+```
 
 ### Chat
 - Frontend: `app/page.tsx` uses the Vercel AI SDK `useChat` hook.
