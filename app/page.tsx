@@ -123,13 +123,6 @@ export default function Page() {
     return "Streaming";
   }, [status]);
 
-  const latestAssistantMessageId = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      if (messages[i]?.role === "assistant") return messages[i].id;
-    }
-    return null;
-  }, [messages]);
-
   const messageText = useCallback((message: (typeof messages)[number]) => {
     return message.parts
       .filter((p) => p.type === "text")
@@ -143,7 +136,9 @@ export default function Page() {
     Record<string, MockHandoffTicketState>
   >({});
 
-  const showStandaloneLoading = isLoading && !latestAssistantMessageId;
+  const showStandaloneLoading =
+    isLoading &&
+    (messages.length === 0 || messages.at(-1)?.role !== "assistant");
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -438,7 +433,8 @@ export default function Page() {
               const isStreamingAssistant =
                 isLoading &&
                 m.role === "assistant" &&
-                m.id === latestAssistantMessageId;
+                messages.length > 0 &&
+                messages.at(-1)?.id === m.id;
 
               return (
              <div
