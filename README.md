@@ -8,9 +8,55 @@ PixelBot is a prototype AI customer support agent for a retro handheld shop. It 
   > I'll connect you with a human technician to finalize your repair quote.
   The UI then calls `POST /api/handoff` to show a demo repair ticket id (no external system).
 
+## CSA short write-up
+
+This section mirrors the CSA assignment brief: business context, user value, AI-assisted development, and product roadmap.
+
+### Business and use case — why this setting?
+
+Retro handheld retail is a strong prototype fit: customers mix **technical** questions (firmware, device setup, compatibility) with **policy** questions (returns, shipping) and occasional **repair** escalations. The domain is narrow enough to ground a small FAQ-style knowledge base while still feeling like a real shop—not a generic chatbot demo.
+
+### What problem does this solve for the end user?
+
+Buyers want **fast, trustworthy answers** grounded in store policy and product facts, **multi-turn help** when a recommendation depends on budget and preferences, and a **clear handoff** when the issue needs a human (for example hardware damage). The agent reduces time-to-answer and avoids the model inventing policies or repair commitments outside the KB and guardrails.
+
+### How I used AI tools (what worked / what didn’t)
+
+- **Tools:** Cursor and LLM assistants for scaffolding the Next.js + AI SDK stack, retrieval and guardrail modules, tests, and README iteration.
+- **What worked well:** Rapid iteration on `app/api/chat/route.ts`, `src/lib/handoff.ts`, and keeping deterministic behavior checked with unit tests.
+- **What didn’t / what to watch:** LLM-suggested prompt and ordering changes need a **manual pass in the real UI**—guardrail order and exact handoff phrasing are easy to break by accident; the manual test matrix is the source of truth.
+
+### Next 3 features (if this were a real product)
+
+See **[Next 3 features (real product path)](#next-3-features-real-product-path)** below.
+
+## Alignment with CSA requirements
+
+### Required minimum scope
+
+| CSA requirement | How PixelBot satisfies it |
+|-----------------|----------------------------|
+| Business context | Retro handheld shop; policies, devices, and support flows are consistent with that setting. |
+| Chat interface | Web chat with multi-turn conversation (`useChat`), not a one-shot form. |
+| Knowledge base | Curated Q&A in code (`src/lib/knowledge-base.ts`); retrieval injects snippets so answers are grounded, not purely from model priors. |
+| Personality and instructions | System prompt + session admin tone/boundary controls (`src/lib/chat-prompt.ts`, Admin mode in UI). |
+| Graceful boundaries | Out-of-scope handling, recommendation clarifiers, and human handoff with mock ticket (`src/lib/handoff.ts`, `src/lib/chat-path.ts`, `POST /api/handoff`). |
+
+### Optional depth (implemented)
+
+- **Streaming responses** — `streamText` + UI stream consumption.
+- **Multi-turn reasoning** — Recommendation flow asks for budget + form factor across turns when needed.
+- **Handoff logic** — Repair path with fixed escalation phrase and mock ticketing.
+- **Admin / config view** — Session-level tone and boundary summary in the main UI.
+- **Analytics or logging** — OpenTelemetry + optional Arize Phoenix for traces (LLM spans, handoff span).
+
+Submit the project as a **GitHub** repository (public or private with reviewer access). This README covers local run, stack, what was built, trade-offs, and what you would do next.
+
 ## Quickstart
 
 **Stack:** Next.js (App Router), React, Vercel AI SDK + OpenRouter, TypeScript. Core chat works without Phoenix; tracing is optional.
+
+**Minimal setup (CSA-style):** `npm install`, configure `.env.local`, then run locally. For Next.js, day-to-day development uses `npm run dev`. A production-style run is `npm run build` followed by `npm start` (see **Run** below).
 
 ### 1) Install
 ```bash
@@ -36,13 +82,20 @@ PHOENIX_PROJECT_NAME=pixel-bot-local
 PHOENIX_API_KEY=
 ```
 
-### 3) Run
+### 3) Run (local development)
 ```bash
 npm run dev
 ```
 
 Open:
 - http://localhost:3000
+
+**Production-style run (after `npm install` and env setup):**
+```bash
+npm run build
+npm start
+```
+Use this if you want to demo the app the same way as a built Next.js deployment.
 
 Without `OPENROUTER_API_KEY`, the chat API returns a clear setup message (and the UI explains common API-key errors).
 
@@ -163,6 +216,14 @@ Then open:
   - `span_kind == 'LLM'`
 - Note: instrumentation exports a focused subset of spans (`pixelbot.chat*`, `ai.streamText*`, or spans with `openinference.span.kind`) to reduce noisy framework rows like `POST /api/chat`.
 
+## Demo video (CSA deliverable — 3–5 minutes)
+
+Record a screen capture (Loom, QuickTime, or similar). Structure it to match the assignment’s three parts; the detailed timing and talking points are in **Product walkthrough script** below.
+
+1. **Product walkthrough** — Who is PixelBot for? Walk through a realistic chat: starter chip, recommendation clarifier, repair + handoff + mock ticket, and optionally policy or out-of-scope.
+2. **Technical walkthrough** — Code layout: API route and guardrails, KB + retrieval, admin config, optional Phoenix traces.
+3. **Reflection** — Trade-offs ([Trade-offs](#trade-offs-prototype-scope)), what you’d add with more time ([Next 3 features](#next-3-features-real-product-path)), and what worked or was finicky in development ([CSA short write-up](#csa-short-write-up)).
+
 ## Demo pre-flight checklist
 1. Confirm `.env.local` exists with a valid `OPENROUTER_API_KEY`; restart `npm run dev` after changes.
 2. Optional: start Phoenix (`phoenix serve`) if you want to show traces in the demo.
@@ -183,18 +244,18 @@ Then open:
    - Show Phoenix traces (for example `pixelbot.chat.request` and, after repair handoff, `pixelbot.handoff.mock_ticket`) and call out latency plus token/cost attributes.
 
 ## Rubric mapping (CSA overview)
-- **Technical execution (30%)**: streaming chat, KB retrieval, deterministic guardrails, telemetry-backed tracing/cost attributes.
-- **Product thinking (30%)**: guided first turn, clear boundaries, recommendation/handoff journeys, and admin controls.
-- **Communication (20%)**: runnable local setup, manual test matrix, and explicit walkthrough script.
-- **Creativity and ambition (20%)**: blended deterministic + LLM behavior, configurable admin mode, and observability polish.
+
+CSA evaluates **technical execution (30%)**, **product thinking (30%)**, **communication (20%)**, and **creativity / ambition (20%)**. PixelBot is structured so reviewers can verify behavior via the manual test matrix, README, and optional demo video outline above.
+
+- **Technical execution**: streaming chat, KB retrieval, deterministic guardrails, telemetry-backed tracing.
+- **Product thinking**: guided first turn, clear boundaries, recommendation and handoff journeys, admin controls.
+- **Communication**: runnable setup (`npm install` + `npm run dev` or `build`/`start`), explicit walkthrough script, CSA short write-up.
+- **Creativity and ambition**: blended deterministic + LLM behavior, configurable admin mode, observability polish.
 
 ## Next 3 features (real product path)
 1. **Tool-calling for real operations**: mock order lookup / repair ticket creation with confirmation messages.
 2. **Persistent business settings**: save admin tone/boundary presets and add role-based edit access.
 3. **Session analytics dashboard**: top intents, unresolved queries, handoff rate, and recommendation conversion.
 
-## AI tooling (Cursor / LLM assistants)
-- Used for scaffolding Next.js + AI SDK wiring, retrieval/guardrail modules, and README polish.
-- **What worked well:** fast iteration on `app/api/chat/route.ts` and `src/lib/handoff.ts`, plus consistent test cases for deterministic behavior.
-- **What to watch:** always re-verify guardrail ordering and prompt wording in the actual UI—LLM-suggested edits need a quick manual pass against the test matrix.
+Details on how AI tools were used in this project appear under **[CSA short write-up](#csa-short-write-up)** → *How I used AI tools*.
 
