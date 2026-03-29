@@ -7,7 +7,7 @@ todos:
     status: pending
   - id: writeup-gap
     content: "Add or tighten README (or short linked doc): why this business + end-user problem in explicit CSA wording"
-    status: pending
+    status: completed
   - id: record-video
     content: "Record 3–5 min Loom/QuickTime: product path, technical tour, reflection/trade-offs/next 3"
     status: pending
@@ -41,10 +41,10 @@ Your repo already implements the **minimum scope** (business context, chat UI, K
 | Boundaries / handoff   | [src/lib/handoff.ts](src/lib/handoff.ts), [src/lib/chat-path.ts](src/lib/chat-path.ts), `POST /api/handoff` |
 | README run + stack     | [README.md](README.md) Quickstart + “How it works”                                                          |
 | Next 3 features        | README “Next 3 features (real product path)”                                                                |
-| AI tooling reflection  | README “AI tooling (Cursor / LLM assistants)”                                                               |
+| AI tooling reflection  | README [CSA short write-up](README.md) → *How I used AI tools*                                              |
 
 
-**Write-up gap (rubric Communication):** CSA explicitly asks for **why you chose this business** and **what problem the agent solves for the end user** as distinct bullets. The README explains *what* PixelBot is and lists capabilities; you may want **2–4 sentences** (same doc or a short `CSA-NOTES.md`) that state **why retro handhelds** and **user problem** in one place so a reviewer does not hunt for them.
+**Write-up (Communication):** README **§ CSA short write-up** answers CSA deliverable (3): business/use case and why, end-user problem, AI tools (worked / didn’t), and pointer to next 3 features. Optional polish: add one sentence under *why* with a concrete shopper moment, or mirror CSA’s exact question phrasing as a sub-line under each heading—nice-to-have, not required for the rubric.
 
 ---
 
@@ -86,7 +86,7 @@ Suggested timing (adjust to your pace):
 ## Optional polish (only if time before recording)
 
 - Tighten one confusing UX path found during the manual matrix (prefer small, verifiable fixes).
-- Add the **why / user problem** prose to README (or `CSA-NOTES.md`) if not already explicit—high impact for Communication with minimal scope creep.
+- README CSA section: optional one-line mirror of CSA’s exact prompts or a concrete “day in the life” shopper sentence under *why*.
 
 ---
 

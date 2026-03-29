@@ -3,6 +3,8 @@
 ## What this is
 PixelBot is a prototype AI customer support agent for a retro handheld shop. It answers questions using a small local knowledge base (firmware/setup/help + store policies), and it includes:
 
+*Why this shop and what job it does for the customer (CSA short write-up) lives in **[CSA short write-up](#csa-short-write-up)** below; this section is the feature summary.*
+
 - Lead qualification: when the user asks for a recommendation, it asks for budget + preferred form factor before recommending anything.
 - Human handoff (mock): when a user reports a broken device and provides both ZIP code + issue details, it outputs the exact trigger phrase:
   > I'll connect you with a human technician to finalize your repair quote.
@@ -14,19 +16,29 @@ This section mirrors the CSA assignment brief: business context, user value, AI-
 
 ### Business and use case — why this setting?
 
+*CSA prompt: What business / use case did you choose and why?*
+
+A typical shopper might be **choosing between two devices before checkout**, **double-checking return policy before they buy**, or **debugging firmware right after unboxing**—different moments, same support surface.
+
 Retro handheld retail is a strong prototype fit: customers mix **technical** questions (firmware, device setup, compatibility) with **policy** questions (returns, shipping) and occasional **repair** escalations. The domain is narrow enough to ground a small FAQ-style knowledge base while still feeling like a real shop—not a generic chatbot demo.
 
 ### What problem does this solve for the end user?
 
+*CSA prompt: What problem does this agent solve for the end user?*
+
 Buyers want **fast, trustworthy answers** grounded in store policy and product facts, **multi-turn help** when a recommendation depends on budget and preferences, and a **clear handoff** when the issue needs a human (for example hardware damage). The agent reduces time-to-answer and avoids the model inventing policies or repair commitments outside the KB and guardrails.
 
 ### How I used AI tools (what worked / what didn’t)
+
+*CSA prompt: How did you use AI tools during development? What worked well? What didn’t?*
 
 - **Tools:** Cursor and LLM assistants for scaffolding the Next.js + AI SDK stack, retrieval and guardrail modules, tests, and README iteration.
 - **What worked well:** Rapid iteration on `app/api/chat/route.ts`, `src/lib/handoff.ts`, and keeping deterministic behavior checked with unit tests.
 - **What didn’t / what to watch:** LLM-suggested prompt and ordering changes need a **manual pass in the real UI**—guardrail order and exact handoff phrasing are easy to break by accident; the manual test matrix is the source of truth.
 
 ### Next 3 features (if this were a real product)
+
+*CSA prompt: If this were a real product, what would the next 3 features be?*
 
 See **[Next 3 features (real product path)](#next-3-features-real-product-path)** below.
 
